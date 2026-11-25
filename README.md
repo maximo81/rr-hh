@@ -1,2 +1,0 @@
-# RRHH
-Dashboard of RRHH
