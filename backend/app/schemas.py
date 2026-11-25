@@ -1,0 +1,91 @@
+"""Modelos Pydantic de entrada (validación) de la API."""
+from datetime import date
+from typing import Literal, Optional
+from pydantic import BaseModel, Field
+
+
+class LoginIn(BaseModel):
+    email: str
+    password: str
+
+
+class EmpleadoIn(BaseModel):
+    legajo: int
+    nombre: str = Field(min_length=1, max_length=60)
+    apellido: str = Field(min_length=1, max_length=60)
+    documento: str
+    email: Optional[str] = None
+    fecha_ingreso: date
+
+
+class AntecedenteIn(BaseModel):
+    tipo: Literal["educacion", "titulo", "experiencia", "cambio_laboral"]
+    descripcion: str
+    fecha: Optional[date] = None
+
+
+class PuestoIn(BaseModel):
+    codigo: str
+    titulo: str
+    mision: Optional[str] = None
+    departamentos_id_dpto: int
+
+
+class EvalDesempenoIn(BaseModel):
+    empleados_id_empleado: int
+    periodo: str
+    puntaje: float = Field(ge=0, le=10)
+    observaciones: Optional[str] = None
+
+
+class EvalCompetenciaIn(BaseModel):
+    empleados_id_empleado: int
+    competencias_id_competencias: int
+    nivel: int = Field(ge=1, le=5)
+    fecha: Optional[date] = None
+    observaciones: Optional[str] = None
+
+
+class NecesidadIn(BaseModel):
+    empleados_id_empleado: int
+    descripcion: str
+    motivo: Optional[str] = None
+    prioridad: Literal["baja", "media", "alta"] = "media"
+
+
+class CapacitacionIn(BaseModel):
+    necesidades_id_necesidad: Optional[int] = None
+    titulo: str
+    descripcion: Optional[str] = None
+    fecha_inicio: Optional[date] = None
+    fecha_fin: Optional[date] = None
+    participantes: list[int] = []
+
+
+class ContribucionIn(BaseModel):
+    titulo: str
+    descripcion: Optional[str] = None
+    fecha: Optional[date] = None
+    resultados: Optional[str] = None
+    participantes: list[int] = []
+
+
+class IncentivoIn(BaseModel):
+    empleados_id_empleado: int
+    contribuciones_id_contribucion: Optional[int] = None
+    tipo: str
+    motivo: Optional[str] = None
+    fecha: Optional[date] = None
+
+
+class AccionIn(BaseModel):
+    descripcion: str
+    responsable: Optional[str] = None
+    fecha_prevista: Optional[date] = None
+
+
+class PlanIn(BaseModel):
+    empleados_id_empleado: int
+    objetivo_general: str
+    objetivos: list[str] = []
+    acciones: list[AccionIn] = []
