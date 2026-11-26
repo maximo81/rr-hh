@@ -70,6 +70,11 @@ class NecesidadIn(BaseModel):
     descripcion: str
     motivo: Optional[str] = None
     prioridad: Literal["baja", "media", "alta"] = "media"
+    # CU5 step 3: optionally assign an existing training or create a new one
+    capacitacion_id: Optional[int] = None
+    capacitacion_titulo: Optional[str] = Field(default=None, max_length=120)
+    fecha_inicio: Optional[date] = None
+    fecha_fin: Optional[date] = None
 
 
 class CapacitacionIn(BaseModel):

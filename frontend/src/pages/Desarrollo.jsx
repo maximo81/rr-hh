@@ -6,12 +6,22 @@ export default function Desarrollo() {
   const [tab, setTab] = useState("necesidades");
   const [rows, setRows] = useState([]);
   const [emps, setEmps] = useState([]);
-  const [f, setF] = useState({ empleado: "", descripcion: "", motivo: "", prioridad: "media" });
+  const [caps, setCaps] = useState([]);
+  const vacio = { empleado: "", descripcion: "", motivo: "", prioridad: "media", capacitacion: "", titulo: "", inicio: "", fin: "" };
+  const [f, setF] = useState(vacio);
   const [msg, setMsg] = useState("");
   const canEdit = ["admin", "rrhh"].includes(localStorage.getItem("rol"));
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
-  useEffect(() => { api.get("/empleados", { params: { limit: 200 } }).then((r) => setEmps(r.data)); }, []);
+  const loadCaps = () => api.get("/capacitaciones").then((r) => setCaps(r.data));
+  useEffect(() => { api.get("/empleados", { params: { limit: 200 } }).then((r) => setEmps(r.data)); loadCaps(); }, []);
+
+  // Selecting an existing training shows its dates; "nueva" lets the user enter title and dates.
+  function elegirCapacitacion(e) {
+    const v = e.target.value;
+    const c = caps.find((x) => String(x.id_capacitacion) === v);
+    setF({ ...f, capacitacion: v, titulo: "", inicio: c?.fecha_inicio || "", fin: c?.fecha_fin || "" });
+  }
   const load = () => api.get(`/${tab}`).then((r) => setRows(r.data));
   useEffect(() => { load(); setMsg(""); }, [tab]);
 
@@ -19,10 +29,16 @@ export default function Desarrollo() {
     e.preventDefault(); setMsg("");
     try {
       if (tab === "necesidades")
-        await api.post("/necesidades", { empleados_id_empleado: +f.empleado, descripcion: f.descripcion, motivo: f.motivo || null, prioridad: f.prioridad });
+        await api.post("/necesidades", {
+          empleados_id_empleado: +f.empleado, descripcion: f.descripcion, motivo: f.motivo || null, prioridad: f.prioridad,
+          capacitacion_id: f.capacitacion && f.capacitacion !== "nueva" ? +f.capacitacion : null,
+          capacitacion_titulo: f.capacitacion === "nueva" ? f.titulo : null,
+          fecha_inicio: f.capacitacion === "nueva" ? f.inicio || null : null,
+          fecha_fin: f.capacitacion === "nueva" ? f.fin || null : null,
+        });
       else
         await api.post("/planes", { empleados_id_empleado: +f.empleado, objetivo_general: f.descripcion });
-      setMsg("Guardado"); load();
+      setMsg("Guardado"); setF(vacio); load(); loadCaps();
     } catch (err) { setMsg(err.response?.data?.detail?.toString() || "Error"); }
   }
 
@@ -39,7 +55,15 @@ export default function Desarrollo() {
           <div><label>{tab === "planes" ? "Objetivo general" : "Descripción"}</label><input value={f.descripcion} onChange={set("descripcion")} required /></div>
           {tab === "necesidades" && <>
             <div><label>Motivo</label><input value={f.motivo} onChange={set("motivo")} /></div>
-            <div><label>Prioridad</label><select value={f.prioridad} onChange={set("prioridad")}><option>baja</option><option>media</option><option>alta</option></select></div></>}
+            <div><label>Prioridad</label><select value={f.prioridad} onChange={set("prioridad")}><option>baja</option><option>media</option><option>alta</option></select></div>
+            <div><label>Capacitación: Título</label><select value={f.capacitacion} onChange={elegirCapacitacion}>
+              <option value="">Sin capacitación</option>
+              {caps.map((c) => <option key={c.id_capacitacion} value={c.id_capacitacion}>{c.titulo}</option>)}
+              <option value="nueva">+ Nueva capacitación…</option></select></div>
+            {f.capacitacion === "nueva" && <div><label>Título de la nueva capacitación</label><input value={f.titulo} onChange={set("titulo")} maxLength={120} required /></div>}
+            {f.capacitacion && <>
+              <div><label>Fecha Inicio</label><input type="date" value={f.inicio} onChange={set("inicio")} disabled={f.capacitacion !== "nueva"} /></div>
+              <div><label>Fecha Fin</label><input type="date" value={f.fin} onChange={set("fin")} min={f.inicio || undefined} disabled={f.capacitacion !== "nueva"} /></div></>}</>}
           <button>Registrar</button>{msg && <span className={msg === "Guardado" ? "ok" : "err"}>{msg}</span>}
         </form>
       )}
