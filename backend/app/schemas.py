@@ -87,7 +87,7 @@ class CapacitacionIn(BaseModel):
 
 
 class ContribucionIn(BaseModel):
-    titulo: str
+    titulo: str = Field(min_length=1, max_length=120)
     descripcion: Optional[str] = None
     fecha: Optional[date] = None
     resultados: Optional[str] = None
