@@ -1,7 +1,7 @@
 """Modelos Pydantic de entrada (validación) de la API."""
 from datetime import date
 from typing import Literal, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class LoginIn(BaseModel):
@@ -29,11 +29,25 @@ class AntecedenteIn(BaseModel):
     fecha: Optional[date] = None
 
 
+class PosicionIn(BaseModel):
+    id_posicion: Optional[int] = None  # None = posición nueva
+    localizacion_fisica: Optional[str] = Field(default=None, max_length=80)
+    estado: Literal["vacante", "congelada"]  # las ocupadas se gestionan desde Empleados
+
+
 class PuestoIn(BaseModel):
-    codigo: str
-    titulo: str
+    model_config = ConfigDict(str_strip_whitespace=True)
+    codigo: str = Field(min_length=1, max_length=20)
+    titulo: str = Field(min_length=1, max_length=80)
     mision: Optional[str] = None
     departamentos_id_dpto: int
+    # Especificación (una por puesto) y sus requisitos
+    categoria: Literal["directivo", "jefatura", "tecnico", "operativo"]
+    educacion: Optional[str] = Field(default=None, max_length=80)
+    experiencia: Optional[str] = None
+    habilidades: list[int] = []
+    conocimientos: list[int] = []
+    posiciones: list[PosicionIn] = []
 
 
 class EvalDesempenoIn(BaseModel):

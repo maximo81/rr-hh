@@ -34,3 +34,21 @@ button.ghost { background:transparent; border:1px solid #33415a; color:#cdd5e1; 
 .modal-bg { position:fixed; inset:0; background:rgba(16,24,38,.45); display:grid; place-items:center; z-index:10; }
 .modal { width:420px; max-width:calc(100% - 32px); margin:0; display:grid; gap:12px; } .modal p { margin:0; }
 .acciones { display:flex; gap:8px; justify-content:flex-end; }
+.encabezado { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; } .encabezado h2 { margin:0; }
+.modal.ancho { width:760px; max-height:calc(100vh - 48px); overflow:auto; } .modal .form { align-items:start; }
+.seccion { color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid var(--line); padding-bottom:4px; margin-top:6px; }
+.checks { display:grid; gap:6px 16px; grid-template-columns: repeat(auto-fill, minmax(210px,1fr)); }
+.checks label { display:flex; gap:8px; align-items:center; color:var(--ink); font-size:14px; } .checks input { width:auto; margin:0; }
+.con-spinner { position:relative; } .con-spinner input { padding-right:34px; }
+.spinner { position:absolute; right:10px; top:50%; width:16px; height:16px; margin-top:-8px; border:2px solid #d5d9e0; border-top-color:#8a94a6; border-radius:50%; animation:girar .8s linear infinite; }
+@keyframes girar { to { transform:rotate(360deg); } }
+.input-ok { border-color:#1b7a3d; } .input-err { border-color:#b3261e; }
+input:disabled { background:#f1f3f6; } button:disabled { opacity:.55; cursor:default; }
+.modal.ancho > .modal-cab, .modal.ancho > .acciones { position:sticky; background:var(--card); z-index:1; }
+.modal.ancho > .modal-cab { top:-16px; padding:16px 0 8px; margin-top:-16px; } .modal.ancho > .acciones { bottom:-16px; padding:10px 0 16px; margin-bottom:-16px; border-top:1px solid var(--line); }
+.modal-cab { display:flex; justify-content:space-between; align-items:center; gap:12px; } .vacio { color:var(--muted); margin:0; }
+.centro { text-align:center; }
+input:disabled, select:disabled, textarea:disabled { background:#f1f3f6; color:var(--ink); opacity:1; } .checks label:has(input:disabled:not(:checked)) { color:var(--muted); }
+.ayuda { position:relative; display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; margin-left:6px; border-radius:50%; background:#e8edf7; color:var(--ink); font-size:11px; font-weight:600; line-height:1; cursor:help; text-transform:none; letter-spacing:0; }
+.ayuda::after { content:attr(data-tip); position:absolute; top:calc(100% + 6px); right:-8px; width:250px; padding:8px 10px; border-radius:6px; background:#101826; color:#fff; font-size:12px; font-weight:400; line-height:1.4; text-align:left; white-space:normal; opacity:0; pointer-events:none; transition:opacity .12s; z-index:2; }
+.ayuda:hover::after, .ayuda:focus::after { opacity:1; }
