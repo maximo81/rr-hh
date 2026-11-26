@@ -273,7 +273,7 @@ export default function Puestos() {
         <h2>Puestos de trabajo</h2>
         <div className="acciones" style={{ alignItems: "center" }}>
           {aviso && <span className="ok">{aviso}</span>}
-          {canEdit && <button onClick={nuevo}>Nuevo</button>}
+          {canEdit && <button onClick={nuevo}>Agregar</button>}
         </div>
       </div>
       {modal && <PuestoForm key={`${modal.ver ? "ver" : "editar"}-${modal.id}`} idPuesto={modal.id} inicial={modal.inicial}
