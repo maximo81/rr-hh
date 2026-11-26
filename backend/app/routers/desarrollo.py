@@ -20,12 +20,31 @@ def necesidades(empleado_id: int | None = None):
 
 @router.post("/necesidades", status_code=201, dependencies=[RRHH])
 def crear_necesidad(d: NecesidadIn):
-    with get_cursor() as cur:
+    titulo = (d.capacitacion_titulo or "").strip()
+    if d.fecha_inicio and d.fecha_fin and d.fecha_fin < d.fecha_inicio:
+        raise HTTPException(422, "La fecha de fin no puede ser anterior a la de inicio")
+    with get_cursor() as cur:  # necesidad + capacitación + participante en una sola transacción
         cur.execute(
             """INSERT INTO necesidades_desarrollo (empleados_id_empleado, descripcion, motivo, prioridad)
                VALUES (%s,%s,%s,%s) RETURNING *""",
             (d.empleados_id_empleado, d.descripcion, d.motivo, d.prioridad))
-        return cur.fetchone()
+        nec = cur.fetchone()
+        cap_id = d.capacitacion_id
+        if cap_id is not None:
+            cur.execute("SELECT 1 FROM capacitaciones WHERE id_capacitacion=%s", (cap_id,))
+            if not cur.fetchone():
+                raise HTTPException(404, "Capacitación no encontrada")
+        elif titulo:
+            cur.execute(
+                """INSERT INTO capacitaciones (necesidades_id_necesidad, titulo, fecha_inicio, fecha_fin)
+                   VALUES (%s,%s,%s,%s) RETURNING id_capacitacion""",
+                (nec["id_necesidad"], titulo, d.fecha_inicio, d.fecha_fin))
+            cap_id = cur.fetchone()["id_capacitacion"]
+        if cap_id is not None:
+            cur.execute("INSERT INTO capacitacion_participantes VALUES (%s,%s) ON CONFLICT DO NOTHING",
+                        (cap_id, d.empleados_id_empleado))
+        nec["capacitacion_id"] = cap_id
+        return nec
 
 
 @router.get("/capacitaciones")

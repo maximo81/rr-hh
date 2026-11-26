@@ -1,7 +1,7 @@
 """Modelos Pydantic de entrada (validación) de la API."""
 from datetime import date
 from typing import Literal, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class LoginIn(BaseModel):
@@ -18,17 +18,36 @@ class EmpleadoIn(BaseModel):
     fecha_ingreso: date
 
 
+class AsignacionPuestoIn(BaseModel):
+    puestos_id_puesto: int
+    localizacion_fisica: Optional[str] = Field(default=None, max_length=80)  # solo si se crea una posición
+
+
 class AntecedenteIn(BaseModel):
     tipo: Literal["educacion", "titulo", "experiencia", "cambio_laboral"]
     descripcion: str
     fecha: Optional[date] = None
 
 
+class PosicionIn(BaseModel):
+    id_posicion: Optional[int] = None  # None = posición nueva
+    localizacion_fisica: Optional[str] = Field(default=None, max_length=80)
+    estado: Literal["vacante", "congelada"]  # las ocupadas se gestionan desde Empleados
+
+
 class PuestoIn(BaseModel):
-    codigo: str
-    titulo: str
+    model_config = ConfigDict(str_strip_whitespace=True)
+    codigo: str = Field(min_length=1, max_length=20)
+    titulo: str = Field(min_length=1, max_length=80)
     mision: Optional[str] = None
     departamentos_id_dpto: int
+    # Especificación (una por puesto) y sus requisitos
+    categoria: Literal["directivo", "jefatura", "tecnico", "operativo"]
+    educacion: Optional[str] = Field(default=None, max_length=80)
+    experiencia: Optional[str] = None
+    habilidades: list[int] = []
+    conocimientos: list[int] = []
+    posiciones: list[PosicionIn] = []
 
 
 class EvalDesempenoIn(BaseModel):
@@ -51,6 +70,11 @@ class NecesidadIn(BaseModel):
     descripcion: str
     motivo: Optional[str] = None
     prioridad: Literal["baja", "media", "alta"] = "media"
+    # CU5 step 3: optionally assign an existing training or create a new one
+    capacitacion_id: Optional[int] = None
+    capacitacion_titulo: Optional[str] = Field(default=None, max_length=120)
+    fecha_inicio: Optional[date] = None
+    fecha_fin: Optional[date] = None
 
 
 class CapacitacionIn(BaseModel):
@@ -63,7 +87,7 @@ class CapacitacionIn(BaseModel):
 
 
 class ContribucionIn(BaseModel):
-    titulo: str
+    titulo: str = Field(min_length=1, max_length=120)
     descripcion: Optional[str] = None
     fecha: Optional[date] = None
     resultados: Optional[str] = None

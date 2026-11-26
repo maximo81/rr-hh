@@ -1,5 +1,5 @@
 """CU8 iniciativas/contribuciones y CU9 incentivos."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from ..db import fetch_all, get_cursor
 from ..deps import get_current_user, require_roles
 from ..schemas import ContribucionIn, IncentivoIn
@@ -10,7 +10,8 @@ router = APIRouter(tags=["contribuciones"], dependencies=[Depends(get_current_us
 @router.get("/contribuciones")
 def listar():
     return fetch_all(
-        """SELECT c.*, COALESCE(string_agg(e.nombre || ' ' || e.apellido, ', '), '') AS participantes
+        """SELECT c.*, COALESCE(string_agg(e.nombre || ' ' || e.apellido, ', '), '') AS participantes,
+                  COALESCE(array_agg(e.id_empleado) FILTER (WHERE e.id_empleado IS NOT NULL), '{}') AS participantes_ids
            FROM contribuciones c
            LEFT JOIN contribucion_participantes cp ON cp.contribuciones_id_contribucion = c.id_contribucion
            LEFT JOIN empleados e ON e.id_empleado = cp.empleados_id_empleado
@@ -27,6 +28,22 @@ def crear(d: ContribucionIn, user: dict = Depends(require_roles("rrhh", "respons
         c = cur.fetchone()
         for emp in set(d.participantes):
             cur.execute("INSERT INTO contribucion_participantes VALUES (%s,%s)", (c["id_contribucion"], emp))
+    return c
+
+
+@router.put("/contribuciones/{id_contribucion}", dependencies=[Depends(require_roles("rrhh", "responsable_area"))])
+def modificar(id_contribucion: int, d: ContribucionIn):
+    with get_cursor() as cur:  # datos + participantes en una sola transacción
+        cur.execute(
+            """UPDATE contribuciones SET titulo=%s, descripcion=%s, fecha=COALESCE(%s, fecha), resultados=%s
+               WHERE id_contribucion=%s RETURNING *""",
+            (d.titulo, d.descripcion, d.fecha, d.resultados, id_contribucion))
+        c = cur.fetchone()
+        if not c:
+            raise HTTPException(404, "Contribución no encontrada")
+        cur.execute("DELETE FROM contribucion_participantes WHERE contribuciones_id_contribucion=%s", (id_contribucion,))
+        for emp in set(d.participantes):
+            cur.execute("INSERT INTO contribucion_participantes VALUES (%s,%s)", (id_contribucion, emp))
     return c
 
 
