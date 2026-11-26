@@ -16,7 +16,9 @@ def departamentos():
 def listar():
     return fetch_all(
         """SELECT p.*, d.nombre AS departamento,
-                  (SELECT count(*) FROM posicion po WHERE po.puestos_id_puesto = p.id_puesto) AS posiciones
+                  (SELECT count(*) FROM posicion po WHERE po.puestos_id_puesto = p.id_puesto) AS posiciones,
+                  (SELECT count(*) FROM posicion po WHERE po.puestos_id_puesto = p.id_puesto
+                     AND po.estado = 'vacante') AS vacantes
            FROM puestos p JOIN departamentos d ON d.id_dpto = p.departamentos_id_dpto ORDER BY p.codigo""")
 
 

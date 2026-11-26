@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from ..db import fetch_all, fetch_one, get_cursor
 from ..deps import get_current_user, require_roles
-from ..schemas import AntecedenteIn, EmpleadoIn
+from ..schemas import AntecedenteIn, AsignacionPuestoIn, EmpleadoIn
 
 router = APIRouter(prefix="/empleados", tags=["empleados"], dependencies=[Depends(get_current_user)])
 RRHH = Depends(require_roles("rrhh"))
@@ -12,7 +12,7 @@ RRHH = Depends(require_roles("rrhh"))
 def listar(q: str | None = None, limit: int = 100, offset: int = 0):
     like = f"%{q}%" if q else "%"
     return fetch_all(
-        """SELECT e.*, p.titulo AS puesto, d.nombre AS departamento
+        """SELECT e.*, p.id_puesto, p.titulo AS puesto, d.nombre AS departamento
            FROM empleados e
            LEFT JOIN ocupacion_puesto o ON o.empleados_id_empleado = e.id_empleado
            LEFT JOIN posicion po ON po.id_posicion = o.posicion_id_posicion
@@ -58,6 +58,45 @@ def actualizar(id_empleado: int, data: EmpleadoIn):
     if not row:
         raise HTTPException(404, "Empleado no encontrado")
     return row
+
+
+@router.put("/{id_empleado}/puesto", dependencies=[RRHH])
+def asignar_puesto(id_empleado: int, data: AsignacionPuestoIn):
+    """Asigna un puesto: libera la posición actual y ocupa una vacante del puesto o crea una nueva."""
+    if not fetch_one("SELECT 1 AS x FROM empleados WHERE id_empleado=%s", (id_empleado,)):
+        raise HTTPException(404, "Empleado no encontrado")
+    if not fetch_one("SELECT 1 AS x FROM puestos WHERE id_puesto=%s", (data.puestos_id_puesto,)):
+        raise HTTPException(404, "Puesto no encontrado")
+    with get_cursor() as cur:  # una sola transacción: liberar + ocupar
+        cur.execute(
+            """SELECT o.posicion_id_posicion AS id_posicion, po.puestos_id_puesto AS id_puesto
+               FROM ocupacion_puesto o JOIN posicion po ON po.id_posicion = o.posicion_id_posicion
+               WHERE o.empleados_id_empleado = %s""", (id_empleado,))
+        actuales = cur.fetchall()
+        for a in actuales:  # ya ocupa ese puesto: nada que hacer
+            if a["id_puesto"] == data.puestos_id_puesto:
+                return {"id_posicion": a["id_posicion"], "creada": False}
+        cur.execute("DELETE FROM ocupacion_puesto WHERE empleados_id_empleado = %s", (id_empleado,))
+        for a in actuales:  # la posición anterior queda vacante si no tiene otro ocupante
+            cur.execute(
+                """UPDATE posicion SET estado = 'vacante' WHERE id_posicion = %s
+                   AND NOT EXISTS (SELECT 1 FROM ocupacion_puesto o WHERE o.posicion_id_posicion = %s)""",
+                (a["id_posicion"], a["id_posicion"]))
+        cur.execute(
+            """SELECT id_posicion FROM posicion WHERE puestos_id_puesto = %s AND estado = 'vacante'
+               ORDER BY id_posicion LIMIT 1 FOR UPDATE SKIP LOCKED""", (data.puestos_id_puesto,))
+        vacante = cur.fetchone()
+        if vacante:
+            cur.execute("UPDATE posicion SET estado = 'ocupada' WHERE id_posicion = %s", (vacante["id_posicion"],))
+            id_posicion, creada = vacante["id_posicion"], False
+        else:
+            cur.execute(
+                """INSERT INTO posicion (puestos_id_puesto, localizacion_fisica, estado)
+                   VALUES (%s, %s, 'ocupada') RETURNING id_posicion""",
+                (data.puestos_id_puesto, (data.localizacion_fisica or "").strip() or None))
+            id_posicion, creada = cur.fetchone()["id_posicion"], True
+        cur.execute("INSERT INTO ocupacion_puesto VALUES (%s, %s, 'titular')", (id_posicion, id_empleado))
+    return {"id_posicion": id_posicion, "creada": creada}
 
 
 @router.post("/{id_empleado}/antecedentes", status_code=201, dependencies=[RRHH])

@@ -18,6 +18,11 @@ class EmpleadoIn(BaseModel):
     fecha_ingreso: date
 
 
+class AsignacionPuestoIn(BaseModel):
+    puestos_id_puesto: int
+    localizacion_fisica: Optional[str] = Field(default=None, max_length=80)  # solo si se crea una posición
+
+
 class AntecedenteIn(BaseModel):
     tipo: Literal["educacion", "titulo", "experiencia", "cambio_laboral"]
     descripcion: str

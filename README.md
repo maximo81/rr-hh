@@ -85,6 +85,6 @@ Son solo para desarrollo: cámbialas antes de usar el sistema en serio.
 
 ## Endpoints principales
 
-`/auth/login`, `/empleados`, `/puestos`, `/competencias`, `/evaluaciones/{desempeno|competencias}`,
+`/auth/login`, `/empleados`, `/empleados/{id}/puesto`, `/puestos`, `/competencias`, `/evaluaciones/{desempeno|competencias}`,
 `/necesidades`, `/capacitaciones`, `/planes`, `/contribuciones`, `/incentivos`, `/dashboard/kpis`.
 Documentación completa en `/docs`.
