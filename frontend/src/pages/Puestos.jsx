@@ -22,9 +22,9 @@ export default function Puestos() {
       )}
       <div className="card">
         <table>
-          <thead><tr><th>Código</th><th>Título</th><th>Unidad</th><th>Posiciones</th><th></th></tr></thead>
+          <thead><tr><th>Código</th><th>Título</th><th>Unidad</th><th style={{ whiteSpace: "nowrap" }}>Posiciones<br /><small>ocupadas / total</small></th><th></th></tr></thead>
           <tbody>{list.map((p) => (
-            <tr key={p.id_puesto}><td>{p.codigo}</td><td>{p.titulo}</td><td>{p.departamento}</td><td>{p.posiciones}</td>
+            <tr key={p.id_puesto}><td>{p.codigo}</td><td>{p.titulo}</td><td>{p.departamento}</td><td>{p.ocupadas} / {p.posiciones}</td>
               <td><button onClick={() => ver(p.id_puesto)}>Ver</button></td></tr>
           ))}</tbody>
         </table>
